@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="hu">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FPV Trainer v0.1</title>
+    <style>
+      html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #101214; font-family: system-ui, sans-serif; }
+      #app { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); display: block; }
+      #track-loading {
+        position: fixed; inset: 0; z-index: 50; display: grid; place-items: center;
+        color: white; background: rgba(5,7,9,.74); backdrop-filter: blur(2px);
+      }
+      #track-loading[hidden] { display: none; }
+      .track-loading-card {
+        display: flex; flex-direction: column; align-items: center; gap: 13px; padding: 22px 28px;
+        border: 1px solid rgba(255,255,255,.22); border-radius: 12px; background: rgba(19,23,26,.95);
+        box-shadow: 0 16px 45px rgba(0,0,0,.45); font-weight: 650;
+      }
+      .track-loading-spinner {
+        width: 34px; height: 34px; border: 4px solid rgba(255,255,255,.2);
+        border-top-color: #69beff; border-radius: 50%; animation: track-loading-spin .75s linear infinite;
+      }
+      @keyframes track-loading-spin { to { transform: rotate(360deg); } }
+      #hud { position: fixed; inset: 0; pointer-events: none; color: white; text-shadow: 0 1px 3px rgba(0,0,0,.9); }
+      #flight-watermark { position: absolute; top: 16px; left: 18px; width: min(255px, 30vw); height: auto; }
+      #telemetry { position: absolute; top: 112px; left: 18px; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre; }
+      #help { position: absolute; left: 18px; bottom: 18px; font-size: 13px; line-height: 1.45; opacity: .92; }
+      #telemetry[hidden], #help[hidden], #stick-indicators[hidden] { display: none; }
+      #stick-indicators {
+        position: absolute; left: 50%; bottom: 18px; display: flex; gap: 14px;
+        transform: translateX(-50%);
+      }
+      .stick-indicator {
+        position: relative; width: clamp(72px, 6.5vw, 96px); aspect-ratio: 1;
+        box-sizing: border-box; border: 2px solid rgba(255,255,255,.92); border-radius: 4px;
+        background: rgba(7,9,10,.28); box-shadow: 0 1px 5px rgba(0,0,0,.65);
+      }
+      .stick-dot {
+        position: absolute; left: 50%; top: 50%; width: 11px; height: 11px;
+        transform: translate(-50%, -50%); border-radius: 50%; background: #ff2929;
+        box-shadow: 0 0 5px rgba(255,35,35,.95);
+      }
+      #race-hud {
+        position: absolute; right: 18px; bottom: 18px; min-width: 260px; padding: 12px 14px;
+        border: 1px solid rgba(255,255,255,.24); border-radius: 9px;
+        background: rgba(12,15,17,.78); text-align: right;
+      }
+      #race-hud[hidden] { display: none; }
+      #race-track { color: #bfe3ff; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+      #race-status { margin-top: 3px; color: #f0f3f5; font-size: 12px; }
+      #race-timer { margin: 2px 0; font: 700 25px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; }
+      #race-laps { color: #cbd4da; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; }
+      #race-start-overlay {
+        position: fixed; left: 50%; top: 42%; z-index: 9; display: grid; justify-items: center; gap: 16px;
+        transform: translate(-50%, -50%); pointer-events: none;
+      }
+      #race-start-overlay[hidden] { display: none; }
+      #race-start-lights { display: flex; gap: clamp(14px, 2vw, 26px); min-width: 230px; justify-content: center; }
+      .race-start-light {
+        visibility: hidden; width: clamp(54px, 7vw, 82px); aspect-ratio: 1; border-radius: 50%;
+        border: 4px solid rgba(255,255,255,.82); background: #ed2525;
+        box-shadow: 0 0 18px rgba(255,26,26,.95), 0 0 42px rgba(255,20,20,.65), inset 0 0 15px rgba(255,255,255,.3);
+      }
+      .race-start-light.active { visibility: visible; }
+      #race-start-message {
+        min-width: 230px; padding: 8px 15px; border-radius: 8px; text-align: center;
+        color: white; background: rgba(10,12,14,.76); font: 800 18px/1.25 ui-monospace, SFMono-Regular, Menlo, monospace;
+        text-shadow: 0 2px 5px #000;
+      }
+      #race-start-overlay.dnf #race-start-lights { display: none; }
+      #race-start-overlay.dnf #race-start-message { color: #ff4a43; font-size: clamp(44px, 9vw, 82px); background: rgba(20,0,0,.72); }
+      #crosshair { position: absolute; left: 50%; top: 50%; width: 12px; height: 12px; transform: translate(-50%,-50%); }
+      #crosshair::before, #crosshair::after { content: ''; position: absolute; background: rgba(255,255,255,.8); }
+      #crosshair::before { width: 12px; height: 1px; top: 5px; }
+      #crosshair::after { height: 12px; width: 1px; left: 5px; }
+      #crosshair[hidden] { display: none; }
+      #settings-buttons {
+        position: fixed; top: 16px; right: 18px; z-index: 10; display: flex;
+        max-width: calc(100vw - 36px); justify-content: flex-end; flex-wrap: wrap; gap: 8px;
+      }
+      .settings-menu-button {
+        padding: 9px 13px;
+        border: 1px solid rgba(255,255,255,.28); border-radius: 8px; color: white;
+        background: rgba(15,18,20,.82); cursor: pointer; font: 600 13px system-ui, sans-serif;
+      }
+      .settings-menu-button:hover { background: rgba(38,43,47,.94); }
+      .settings-menu-button:disabled { cursor: not-allowed; opacity: .45; }
+      #start-race-button { border-color: rgba(90,225,125,.8); background: rgba(31,124,60,.92); }
+      #respawn-button { border-color: rgba(105,190,255,.7); background: rgba(30,92,137,.9); }
+      #controller-settings, #camera-settings, #drone-settings, #physics-settings, #track-settings, #track-selector, #configuration-transfer, #leaderboard, #race-record-dialog {
+        position: fixed; inset: 0; z-index: 20; display: grid; place-items: center;
+        background: rgba(0,0,0,.56); color: white;
+      }
+      #controller-settings[hidden], #camera-settings[hidden], #drone-settings[hidden], #physics-settings[hidden], #track-settings[hidden], #track-selector[hidden], #configuration-transfer[hidden], #leaderboard[hidden], #race-record-dialog[hidden] { display: none; }
+      .settings-card {
+        width: min(520px, calc(100vw - 32px)); box-sizing: border-box; padding: 22px;
+        border: 1px solid rgba(255,255,255,.2); border-radius: 14px;
+        max-height: calc(100vh - 32px); overflow: auto;
+        background: rgba(21,24,27,.97); box-shadow: 0 18px 55px rgba(0,0,0,.45);
+      }
+      .settings-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+      .settings-header h2 { margin: 0; font-size: 20px; }
+      .settings-close {
+        border: 0; padding: 4px 8px; color: white; background: transparent;
+        cursor: pointer; font-size: 25px; line-height: 1;
+      }
+      #controller-status { margin: 10px 0 16px; color: #b9c1c7; font-size: 13px; }
+      .mapping-row {
+        display: grid; grid-template-columns: 95px 1fr auto; gap: 12px;
+        align-items: center; margin: 10px 0;
+      }
+      .mapping-row select {
+        min-width: 0; padding: 8px; border: 1px solid #535b62; border-radius: 6px;
+        color: white; background: #292e32;
+      }
+      .invert-label { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+      .toggle-setting-row {
+        display: flex; align-items: center; justify-content: space-between; gap: 16px;
+        margin: 16px 0; padding: 11px 12px; border-radius: 7px; background: #191d20;
+      }
+      .toggle-setting-row input { width: 20px; height: 20px; accent-color: #4d9bd8; }
+      .settings-note { margin: 16px 0; color: #b9c1c7; font-size: 12px; line-height: 1.45; }
+      .settings-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+      .settings-action {
+        padding: 8px 11px; border: 1px solid #535b62; border-radius: 6px;
+        color: white; background: #292e32; cursor: pointer;
+      }
+      .settings-action.primary { border-color: #4d8fc9; background: #276a9e; }
+      .settings-action:disabled { cursor: not-allowed; opacity: .45; }
+      #controller-calibration {
+        margin-top: 16px; padding: 14px; border: 1px solid #444c52;
+        border-radius: 8px; background: #191d20;
+      }
+      #controller-calibration[hidden] { display: none; }
+      #controller-calibration h3 { margin: 0 0 8px; font-size: 16px; }
+      #calibration-instructions { margin: 0 0 10px; color: #d3d8dc; font-size: 13px; line-height: 1.45; }
+      #calibration-values {
+        max-height: 145px; overflow: auto; margin: 10px 0; padding: 8px;
+        border-radius: 5px; background: #101315; color: #bfe3ff;
+        font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre;
+      }
+      #calibration-message { min-height: 18px; margin: 8px 0; color: #ffcf70; font-size: 12px; }
+      .camera-setting-row, .drone-setting-row, .physics-setting-row {
+        display: grid; grid-template-columns: 120px 1fr 76px; gap: 12px;
+        align-items: center; margin: 18px 0;
+      }
+      .camera-setting-row input[type="range"], .drone-setting-row input[type="range"], .physics-setting-row input[type="range"] { width: 100%; accent-color: #4d9bd8; }
+      .camera-setting-row select {
+        grid-column: 2 / 4; width: 100%; box-sizing: border-box; padding: 7px;
+        border: 1px solid #535b62; border-radius: 6px; color: white; background: #292e32;
+      }
+      .camera-setting-row input[type="number"], .drone-setting-row input[type="number"], .physics-setting-row input[type="number"] {
+        width: 100%; box-sizing: border-box; padding: 7px;
+        border: 1px solid #535b62; border-radius: 6px; color: white; background: #292e32;
+      }
+      #camera-fov-summary {
+        margin: -4px 0 14px; padding: 9px 10px; border-radius: 6px;
+        color: #bfe3ff; background: #101315; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      #track-file-select {
+        width: 100%; box-sizing: border-box; margin: 16px 0 10px; padding: 10px;
+        border: 1px solid #535b62; border-radius: 6px; color: white; background: #292e32;
+      }
+      #track-selector-status {
+        min-height: 18px; margin: 8px 0 16px; color: #bfe3ff; font-size: 13px;
+      }
+      #track-selector-status[data-error="true"] { color: #ff9b8f; }
+      #leaderboard-track { margin: 8px 0 14px; color: #bfe3ff; font-size: 13px; }
+      .leaderboard-row {
+        display: grid; grid-template-columns: 32px minmax(60px, 1fr) auto 68px 68px; gap: 7px; padding: 9px 8px;
+        border-bottom: 1px solid #343b40; font: 13px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
+        align-items: center;
+      }
+      .leaderboard-row:first-child { color: #ffd36a; font-weight: 700; }
+      .leaderboard-replay, .leaderboard-render { padding: 6px 7px; font-size: 12px; }
+      .leaderboard-empty { padding: 18px 8px; color: #aeb7bd; text-align: center; }
+      #leaderboard-render-status {
+        margin: 12px 0 4px; padding: 9px 10px; border-radius: 6px;
+        color: #bfe3ff; background: #101315; font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      #leaderboard-render-status[hidden] { display: none; }
+      #leaderboard-render-status[data-error="true"] { color: #ff9b8f; }
+      #replay-controls {
+        position: fixed; left: 50%; bottom: 18px; z-index: 12; display: flex; align-items: center; gap: 12px;
+        transform: translateX(-50%); padding: 9px 11px; border: 1px solid rgba(105,190,255,.6);
+        border-radius: 8px; color: white; background: rgba(12,26,36,.92);
+      }
+      #replay-controls[hidden] { display: none; }
+      #replay-status { font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; }
+      #race-record-time { margin: 12px 0; color: #ffd36a; font: 700 18px ui-monospace, SFMono-Regular, Menlo, monospace; }
+      #race-record-name {
+        width: 100%; box-sizing: border-box; margin: 4px 0 16px; padding: 10px;
+        border: 1px solid #535b62; border-radius: 6px; color: white; background: #292e32;
+      }
+      #drone-settings-summary {
+        margin: 12px 0 18px; padding: 10px; border-radius: 6px;
+        color: #bfe3ff; background: #101315; font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      .settings-section-title {
+        margin: 20px 0 4px; padding-bottom: 6px; border-bottom: 1px solid #3c444a;
+        color: #dce7ee; font-size: 14px;
+      }
+
+      /* Betaflight-style configurator shell. The individual setting panels keep
+         their existing IDs and logic, but now open inside one shared workspace. */
+      :root {
+        --config-yellow: #ffbf00;
+        --config-yellow-soft: rgba(255,191,0,.18);
+        --config-header-height: 88px;
+        --config-sidebar-width: 252px;
+        --config-panel: #151718;
+        --config-panel-raised: #1d2022;
+        --config-border: #3b3f41;
+      }
+      #configurator-shell { position: fixed; inset: 0; color: #e9ecee; pointer-events: none; }
+      #configurator-header {
+        position: fixed; z-index: 32; left: 0; right: 0; top: 0; height: var(--config-header-height);
+        box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: 28px;
+        padding: 12px 24px; pointer-events: auto; border-bottom: 1px solid #303335;
+        background: linear-gradient(180deg, #202224 0%, #181a1b 100%); box-shadow: 0 5px 18px rgba(0,0,0,.36);
+      }
+      #simulator-logo { display: flex; align-items: center; gap: 12px; min-width: 228px; color: white; }
+      .simulator-logo-mark {
+        display: grid; place-items: center; width: 58px; height: 58px; box-sizing: border-box;
+        border: 2px solid var(--config-yellow); border-radius: 50% 12% 50% 12%; color: var(--config-yellow);
+        font: 900 17px/1 system-ui, sans-serif; letter-spacing: -.8px; transform: rotate(-5deg);
+        box-shadow: inset 0 0 18px rgba(255,191,0,.11), 0 0 14px rgba(255,191,0,.08);
+      }
+      .simulator-logo-copy { display: grid; line-height: 1; }
+      .simulator-logo-copy strong { color: var(--config-yellow); font-size: 23px; font-style: italic; letter-spacing: .8px; }
+      .simulator-logo-copy small { margin-top: 7px; color: #aeb4b8; font-size: 9px; font-weight: 750; letter-spacing: 1.55px; }
+      .configurator-status { display: flex; align-items: center; justify-content: flex-end; gap: 26px; color: #aeb4b8; font-size: 11px; font-weight: 700; letter-spacing: .55px; }
+      .configurator-status > span { white-space: nowrap; }
+      .status-dot { display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%; background: #73d878; box-shadow: 0 0 9px rgba(115,216,120,.8); }
+      kbd { padding: 3px 7px; border: 1px solid #565b5e; border-bottom-width: 2px; border-radius: 4px; color: #f1f3f4; background: #292c2e; font: 700 10px/1.2 ui-monospace, monospace; }
+      #settings-buttons {
+        position: fixed; z-index: 31; left: 0; top: var(--config-header-height); bottom: 0; width: var(--config-sidebar-width);
+        box-sizing: border-box; display: flex; flex-direction: column; flex-wrap: nowrap; gap: 3px;
+        max-width: none; padding: 13px 10px 14px; overflow-x: hidden; overflow-y: auto; pointer-events: auto;
+        border-right: 1px solid #303335; background: rgba(21,23,24,.985); box-shadow: 5px 0 20px rgba(0,0,0,.25);
+      }
+      .menu-section-label { margin: 14px 11px 5px; color: #737a7e; font-size: 9px; font-weight: 850; letter-spacing: 1.5px; }
+      .menu-section-label:first-child { margin-top: 2px; }
+      .settings-menu-button {
+        position: relative; display: flex; align-items: center; width: 100%; min-height: 40px; box-sizing: border-box;
+        padding: 9px 11px 9px 45px; border: 0; border-radius: 5px; color: #d5dade; background: transparent;
+        cursor: pointer; text-align: left; font: 590 13px/1.2 system-ui, sans-serif; transition: color .12s, background .12s;
+      }
+      .settings-menu-button::before {
+        content: attr(data-icon); position: absolute; left: 15px; top: 50%; width: 20px; transform: translateY(-50%);
+        color: #8d9498; text-align: center; font: 700 18px/1 system-ui, sans-serif;
+      }
+      .settings-menu-button:hover { color: white; background: #292c2e; }
+      .settings-menu-button:hover::before { color: var(--config-yellow); }
+      .settings-menu-button.active { color: var(--config-yellow); background: linear-gradient(90deg, rgba(255,191,0,.28), rgba(255,191,0,.08)); box-shadow: inset 3px 0 var(--config-yellow); }
+      .settings-menu-button.active::before { color: var(--config-yellow); }
+      .settings-menu-button:disabled { cursor: not-allowed; opacity: .38; }
+      #start-race-button, #respawn-button { border: 1px solid #44494c; background: #242729; }
+      #start-race-button { color: #101112; border-color: #dca600; background: var(--config-yellow); font-weight: 800; }
+      #start-race-button::before { color: #151718; }
+      #start-race-button:hover { color: #101112; background: #ffd044; }
+      #respawn-button { color: #e1e5e7; }
+      #respawn-button:hover { background: #303437; }
+      .menu-version { margin: auto 10px 2px; padding-top: 14px; color: #7f878b; font: 700 11px/1.2 ui-monospace, monospace; border-top: 1px solid #303436; }
+      #configurator-home {
+        position: fixed; z-index: 18; left: var(--config-sidebar-width); right: 0; top: var(--config-header-height); bottom: 0;
+        display: grid; place-items: center; box-sizing: border-box; padding: 36px; pointer-events: auto;
+        background: radial-gradient(circle at 65% 25%, #25292b 0%, #151718 43%, #101213 100%);
+      }
+      .configurator-home-card { max-width: 610px; text-align: center; color: #b9c0c4; }
+      .configurator-home-kicker { color: var(--config-yellow); font-size: 11px; font-weight: 850; letter-spacing: 2.8px; }
+      .configurator-home-card h1 { margin: 9px 0 13px; color: #f1f3f4; font-size: clamp(30px, 4vw, 52px); letter-spacing: -1.5px; }
+      .configurator-home-card p { margin: 0; line-height: 1.65; }
+      #go-fly-button {
+        min-width: 180px; margin-top: 8px; padding: 13px 30px; border: 1px solid #62d270; border-radius: 7px;
+        color: #07130a; background: linear-gradient(180deg, #77e884, #47bd5a); cursor: pointer;
+        box-shadow: 0 8px 24px rgba(48,186,70,.22); font: 850 16px/1 system-ui, sans-serif; letter-spacing: .4px;
+      }
+      #go-fly-button:hover { background: linear-gradient(180deg, #8cf097, #59ce69); transform: translateY(-1px); }
+
+      #controller-settings, #camera-settings, #drone-settings, #physics-settings, #track-settings, #track-selector, #configuration-transfer, #leaderboard {
+        z-index: 20; left: var(--config-sidebar-width); right: 0; top: var(--config-header-height); bottom: 0; inset: var(--config-header-height) 0 0 var(--config-sidebar-width);
+        display: block; overflow: hidden; place-items: initial; color: #e9ecee; background: var(--config-panel);
+      }
+      #controller-settings > .settings-card, #camera-settings > .settings-card, #drone-settings > .settings-card,
+      #physics-settings > .settings-card, #track-settings > .settings-card, #track-selector > .settings-card,
+      #configuration-transfer > .settings-card, #leaderboard > .settings-card {
+        width: 100%; height: 100%; max-width: none; max-height: none; box-sizing: border-box; margin: 0; padding: 27px clamp(24px, 4vw, 58px) 50px;
+        overflow-y: auto; border: 0; border-radius: 0; color: #e8ebed;
+        background: linear-gradient(135deg, #17191a 0%, #121415 100%); box-shadow: none;
+      }
+      #controller-settings > .settings-card > *, #camera-settings > .settings-card > *, #drone-settings > .settings-card > *,
+      #physics-settings > .settings-card > *, #track-settings > .settings-card > *, #track-selector > .settings-card > *,
+      #configuration-transfer > .settings-card > *, #leaderboard > .settings-card > * { max-width: 1120px; }
+      .settings-header { margin-bottom: 22px; padding-bottom: 14px; border-bottom: 1px solid #34383a; }
+      .settings-header h2 { color: #f0f2f3; font-size: 24px; font-weight: 680; }
+      .settings-header h2::before { content: ''; display: inline-block; width: 5px; height: 24px; margin-right: 11px; vertical-align: -4px; border-radius: 3px; background: var(--config-yellow); }
+      .settings-close { color: #92999d; border: 1px solid transparent; border-radius: 5px; }
+      .settings-close:hover { color: white; border-color: #4b5053; background: #292d2f; }
+      .toggle-setting-row, #controller-calibration {
+        border: 1px solid var(--config-border); border-radius: 8px; background: var(--config-panel-raised); box-shadow: inset 0 1px rgba(255,255,255,.025);
+      }
+      .toggle-setting-row { max-width: 760px !important; margin: 10px 0; padding: 12px 14px; }
+      .toggle-setting-row input {
+        position: relative; appearance: none; width: 42px; height: 22px; flex: 0 0 42px; border: 1px solid #4a4f52; border-radius: 12px;
+        background: #303436; cursor: pointer; transition: background .15s, border-color .15s;
+      }
+      .toggle-setting-row input::after {
+        content: ''; position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; border-radius: 50%; background: #e6e9ea; transition: transform .15s;
+      }
+      .toggle-setting-row input:checked { border-color: var(--config-yellow); background: var(--config-yellow); }
+      .toggle-setting-row input:checked::after { transform: translateX(20px); background: #171819; }
+      .mapping-row select, .camera-setting-row select, .camera-setting-row input[type="number"],
+      .drone-setting-row input[type="number"], .physics-setting-row input[type="number"], #track-file-select, #race-record-name {
+        border-color: #4a4f52; color: #f0f2f3; background: #242729;
+      }
+      .mapping-row select:focus, .camera-setting-row select:focus, .camera-setting-row input:focus,
+      .drone-setting-row input:focus, .physics-setting-row input:focus, #track-file-select:focus {
+        outline: 1px solid var(--config-yellow); border-color: var(--config-yellow);
+      }
+      .camera-setting-row input[type="range"], .drone-setting-row input[type="range"], .physics-setting-row input[type="range"] { accent-color: var(--config-yellow); }
+      .settings-section-title {
+        width: fit-content; margin: 25px 0 13px; padding: 6px 14px; border: 0; border-radius: 16px;
+        color: #171819; background: var(--config-yellow); font-size: 13px; font-weight: 800;
+      }
+      .settings-note, #controller-status { color: #aab1b5; }
+      .settings-action { border-color: #4c5154; color: #e7eaeb; background: #292d2f; }
+      .settings-action:hover { border-color: #676e72; background: #353a3d; }
+      .settings-action.primary { border-color: #d9a500; color: #151718; background: var(--config-yellow); font-weight: 750; }
+      .configuration-transfer-section {
+        max-width: 760px !important; margin: 16px 0; padding: 18px 20px; border: 1px solid var(--config-border);
+        border-radius: 8px; background: var(--config-panel-raised);
+      }
+      .configuration-transfer-section h3 { margin: 0 0 8px; color: var(--config-yellow); font-size: 16px; }
+      .configuration-transfer-section p { margin: 0 0 16px; color: #aeb5b9; font-size: 13px; line-height: 1.55; }
+      #configuration-transfer-status { min-height: 20px; margin-top: 14px; color: #8ee59b; font-size: 13px; }
+      #configuration-transfer-status[data-error="true"] { color: #ff9389; }
+      #race-record-dialog { z-index: 60; }
+      body.configurator-menu-hidden #configurator-shell,
+      body.configurator-menu-hidden #controller-settings,
+      body.configurator-menu-hidden #camera-settings,
+      body.configurator-menu-hidden #drone-settings,
+      body.configurator-menu-hidden #physics-settings,
+      body.configurator-menu-hidden #track-settings,
+      body.configurator-menu-hidden #track-selector,
+      body.configurator-menu-hidden #configuration-transfer,
+      body.configurator-menu-hidden #leaderboard { display: none !important; }
+
+      @media (max-width: 500px) {
+        :root { --config-header-height: 72px; --config-sidebar-width: min(82vw, 252px); }
+        #configurator-header { padding: 8px 14px; }
+        .simulator-logo-mark { width: 46px; height: 46px; font-size: 14px; }
+        .simulator-logo-copy strong { font-size: 19px; }
+        .simulator-logo-copy small { font-size: 7px; }
+        .configurator-status > span:not(.configurator-esc-hint) { display: none; }
+        .configurator-esc-hint { font-size: 0; }
+        #settings-buttons { left: 0; right: auto; justify-content: flex-start; flex-wrap: nowrap; }
+        .settings-menu-button { padding: 8px 10px 8px 45px; font-size: 12px; }
+        .mapping-row { grid-template-columns: 75px 1fr; }
+        .invert-label { grid-column: 2; }
+        .camera-setting-row, .drone-setting-row, .physics-setting-row { grid-template-columns: 95px 1fr 68px; gap: 8px; }
+        #race-hud { right: 12px; bottom: 76px; min-width: 220px; }
+      }
+    </style>
+    <script type="module" crossorigin src="./assets/index-p9Z86N_k.js"></script>
+  </head>
+  <body>
+    <canvas id="app"></canvas>
+    <div id="race-start-overlay" role="status" aria-live="assertive" hidden>
+      <div id="race-start-lights" aria-hidden="true">
+        <span class="race-start-light"></span>
+        <span class="race-start-light"></span>
+        <span class="race-start-light"></span>
+      </div>
+      <div id="race-start-message">THROTTLE 0%</div>
+    </div>
+    <div id="track-loading" role="status" aria-live="polite" hidden>
+      <div class="track-loading-card">
+        <div class="track-loading-spinner" aria-hidden="true"></div>
+        <div id="track-loading-label">Pálya betöltése…</div>
+      </div>
+    </div>
+    <div id="hud">
+      <img id="flight-watermark" alt="Learn FPV" />
+      <div id="telemetry"></div>
+      <div id="crosshair"></div>
+      <div id="help">W/S pitch · A/D roll · ↑/↓ throttle · ←/→ yaw · R respawn<br>Gamepad respawn: egyszer spawn · spawnon újra versenyrajt</div>
+      <div id="stick-indicators" aria-hidden="true">
+        <div class="stick-indicator"><span id="left-stick-dot" class="stick-dot"></span></div>
+        <div class="stick-indicator"><span id="right-stick-dot" class="stick-dot"></span></div>
+      </div>
+      <div id="race-hud" hidden>
+        <div id="race-track"></div>
+        <div id="race-status"></div>
+        <div id="race-timer">0:00.000</div>
+        <div id="race-laps"></div>
+      </div>
+    </div>
+    <div id="configurator-shell">
+      <header id="configurator-header">
+        <div id="simulator-logo" aria-label="FPV Trainer Simulator">
+          <span class="simulator-logo-mark">FPV</span>
+          <span class="simulator-logo-copy"><strong>TRAINER</strong><small>Learn FPV</small></span>
+        </div>
+        <div class="configurator-status">
+          <span><i class="status-dot"></i> SIMULATOR READY</span>
+          <span>ACRO MODE</span>
+          <span class="configurator-esc-hint"><kbd>ESC</kbd> MENÜ ELREJTÉSE</span>
+        </div>
+      </header>
+      <aside id="settings-buttons" aria-label="Konfigurátor menü">
+        <div class="menu-section-label">REPÜLÉS</div>
+        <button id="start-race-button" class="settings-menu-button menu-action-button" data-icon="▶" type="button">Start Race</button>
+        <button id="respawn-button" class="settings-menu-button menu-action-button" data-icon="↻" type="button">Respawn</button>
+        <div class="menu-section-label">PÁLYA</div>
+        <button id="track-selector-button" class="settings-menu-button" data-icon="▣" type="button">Pályaválasztó</button>
+        <button id="track-settings-button" class="settings-menu-button" data-icon="☼" type="button">Pályabeállítások</button>
+        <button id="leaderboard-button" class="settings-menu-button" data-icon="☆" type="button">Leaderboard</button>
+        <div class="menu-section-label">SZIMULÁTOR</div>
+        <button id="drone-settings-button" class="settings-menu-button" data-icon="◇" type="button">Drón beállítások</button>
+        <button id="physics-settings-button" class="settings-menu-button" data-icon="∿" type="button">Fizika / Rates</button>
+        <button id="camera-settings-button" class="settings-menu-button" data-icon="◉" type="button">Kamera beállítások</button>
+        <button id="controller-settings-button" class="settings-menu-button" data-icon="⌁" type="button">Kontroller beállítások</button>
+        <div class="menu-section-label">RENDSZER</div>
+        <button id="configuration-transfer-button" class="settings-menu-button" data-icon="⇄" type="button">Mentés / import</button>
+        <div class="menu-version">v0.1a [260823]</div>
+      </aside>
+      <main id="configurator-home">
+        <div class="configurator-home-card">
+          <span class="configurator-home-kicker">FPV TRAINER</span>
+          <h1>Learn FPV</h1>
+          <button id="go-fly-button" type="button">Go FLY!</button>
+        </div>
+      </main>
+    </div>
+    <div id="replay-controls" hidden>
+      <span id="replay-status">REPLAY</span>
+      <button id="replay-stop-button" class="settings-action" type="button">Replay leállítása</button>
+    </div>
+    <div id="track-selector" hidden>
+      <div class="settings-card" role="dialog" aria-modal="true" aria-labelledby="track-selector-title">
+        <div class="settings-header">
+          <h2 id="track-selector-title">Pályaválasztó</h2>
+          <button id="track-selector-close" class="settings-close" type="button" aria-label="Bezárás">&times;</button>
+        </div>
+        <select id="track-file-select" aria-label="Betöltendő pálya"></select>
+        <div id="track-selector-status">Pályák keresése…</div>
+        <p class="settings-note">A lista a <code>public/tracks</code> mappa GLB és glTF fájljait tartalmazza. A kiválasztott pálya automatikusan betöltődik és megmarad a következő indításra.</p>
+        <div class="settings-actions">
+          <button id="track-reload-button" class="settings-action" type="button">Pálya újratöltése</button>
+        </div>
+      </div>
+    </div>
+    <div id="configuration-transfer" hidden>
+      <div class="settings-card" role="dialog" aria-modal="true" aria-labelledby="configuration-transfer-title">
+        <div class="settings-header">
+          <h2 id="configuration-transfer-title">Beállítások mentése / importálása</h2>
+          <button id="configuration-transfer-close" class="settings-close" type="button" aria-label="Bezárás">&times;</button>
+        </div>
+        <section class="configuration-transfer-section">
+          <h3>Exportálás</h3>
+          <p>Az export tartalmazza az összes kamera-, pálya-, drón-, fizika/PID- és kontrollerbeállítást, a kalibrációt, valamint az aktuálisan kiválasztott pályát.</p>
+          <button id="configuration-export-button" class="settings-action primary" type="button">Beállítások letöltése JSON-ban</button>
+        </section>
+        <section class="configuration-transfer-section">
+          <h3>Importálás</h3>
+          <p>Válassz ki egy korábban exportált JSON-fájlt. Az import felülírja a jelenlegi beállításokat, majd újratölti a szimulátort.</p>
+          <input id="configuration-import-file" type="file" accept="application/json,.json" hidden />
+          <button id="configuration-import-button" class="settings-action" type="button">JSON-fájl kiválasztása</button>
+        </section>
+        <div id="configuration-transfer-status" role="status" aria-live="polite"></div>
+      </div>
+    </div>
+    <div id="leaderboard" hidden>
+      <div class="settings-card" role="dialog" aria-modal="true" aria-labelledby="leaderboard-title">
+        <div class="settings-header">
+          <h2 id="leaderboard-title">Pálya leaderboard</h2>
+          <button id="leaderboard-close" class="settings-close" type="button" aria-label="Bezárás">&times;</button>
+        </div>
+        <div id="leaderboard-track"></div>
+        <div id="leaderboard-rows"></div>
+        <div id="leaderboard-render-status" role="status" aria-live="polite" hidden></div>
+        <p class="settings-note">A leaderboard és a replay a szerveren tárolódik. A teljes háromkörös versenyidőt rangsorolja; új nevet csak az eddigi leggyorsabb összidő megdöntésekor lehet megadni.</p>
+      </div>
+    </div>
+    <div id="race-record-dialog" hidden>
+      <div class="settings-card" role="dialog" aria-modal="true" aria-labelledby="race-record-title">
+        <div class="settings-header">
+          <h2 id="race-record-title">Új pályarekord!</h2>
+        </div>
+        <div id="race-record-time"></div>
+        <label for="race-record-name">Pilóta neve</label>
+        <input id="race-record-name" type="text" maxlength="20" autocomplete="nickname" />
+        <div class="settings-actions">
+          <button id="race-record-skip" class="settings-action" type="button">Kihagyás</button>
+          <button id="race-record-save" class="settings-action primary" type="button" disabled>Mentés a leaderboardra</button>
+        </div>
+      </div>
+    </div>
+    <div id="track-settings" hidden>
+      <div class="settings-card" role="dialog" aria-modal="true" aria-labelledby="track-settings-title">
+        <div class="settings-header">
+          <h2 id="track-settings-title">Pályabeállítások</h2>
+          <button id="track-settings-close" class="settings-close" type="button" aria-label="Bezárás">&times;</button>
+        </div>
+        <label class="toggle-setting-row" for="track-shadows">
+          <span>Árnyékok</span>
+          <input id="track-shadows" type="checkbox" />
+        </label>
+        <label class="toggle-setting-row" for="track-skybox">
+          <span>Pálya skybox</span>
+          <input id="track-skybox" type="checkbox" />
+        </label>
+        <label class="toggle-setting-row" for="track-crosshair">
+          <span>Célkereszt</span>
+          <input id="track-crosshair" type="checkbox" />
+        </label>
+        <label class="toggle-setting-row" for="track-telemetry">
+          <span>Bal oldali telemetria</span>
+          <input id="track-telemetry" type="checkbox" />
+        </label>
+        <label class="toggle-setting-row" for="track-help">
+          <span>Alsó vezérlési súgó</span>
+          <input id="track-help" type="checkbox" />
+        </label>
+        <label class="toggle-setting-row" for="track-stick-indicators">
+          <span>Stick indikátorok</span>
+          <input id="track-stick-indicators" type="checkbox" />
+        </label>
+        <p class="settings-note">A skybox akkor jelenik meg, ha a pálya mellett van egy azonos nevű <code>_skybox</code> kép. Az árnyékok kikapcsolása növelheti a teljesítményt. A beállítások automatikusan mentésre kerülnek.</p>
+        <div class="settings-actions">
+          <button id="track-settings-reset" class="settings-action" type="button">Alapértékek visszaállítása</button>
+        </div>
+      </div>
+    </div>
+    <div id="controller-settings" hidden>
+      <div class="settings-card" role="dialog" aria-modal="true" aria-labelledby="controller-settings-title">
+        <div class="settings-header">
+          <h2 id="controller-settings-title">Kontroller tengelykiosztás</h2>
+          <button id="controller-settings-close" class="settings-close" type="button" aria-label="Bezárás">&times;</button>
+        </div>
+        <div id="controller-status">Nincs csatlakoztatott kontroller</div>
+        <div id="controller-mappings"></div>
+        <div class="mapping-row">
+          <label for="controller-respawn-button">Respawn gomb</label>
+          <select id="controller-respawn-button"></select>
+          <span></span>
+        </div>
+        <p class="settings-note">A tengely száma kontrollerenként eltérhet. Mozgasd a karokat, és az élő érték alapján válaszd ki a megfelelő tengelyt.</p>
+        <div id="controller-calibration" hidden>
+          <h3>Kontroller kalibráció</h3>
+          <p id="calibration-instructions">Indítsd el a mérést, majd mozgasd az összes kart többször teljesen minden irányba. Ezután tedd a throttle-t minimumra, a többi kart középre, és mentsd el.</p>
+          <div id="calibration-values">A mérés még nem indult el.</div>
+          <div id="calibration-message"></div>
+          <div class="settings-actions">
+            <button id="calibration-start" class="settings-action primary" type="button">Mérés indítása</button>
+            <button id="calibration-save" class="settings-action" type="button" disabled>Kalibráció mentése</button>
+            <button id="calibration-clear" class="settings-action" type="button">Kalibráció törlése</button>
+          </div>
+        </div>
+        <div class="settings-actions">
+          <button id="controller-calibration-toggle" class="settings-action" type="button">Kalibráció</button>
+          <button id="controller-settings-reset" class="settings-action" type="button">Alap Mode 2 kiosztás</button>
+        </div>
+      </div>
+    </div>
+    <div id="camera-settings" hidden>
+      <div class="settings-card" role="dialog" aria-modal="true" aria-labelledby="camera-settings-title">
+        <div class="settings-header">
+          <h2 id="camera-settings-title">Kamera beállítások</h2>
+          <button id="camera-settings-close" class="settings-close" type="button" aria-label="Bezárás">&times;</button>
+        </div>
+        <div class="camera-setting-row">
+          <label for="camera-angle">Kameraszög</label>
+          <input id="camera-angle" type="range" min="0" max="60" step="1" />
+          <input id="camera-angle-number" type="number" min="0" max="60" step="1" aria-label="Kameraszög fokban" />
+        </div>
+        <div class="camera-setting-row">
+          <label for="camera-aspect-ratio">Videó képarány</label>
+          <select id="camera-aspect-ratio">
+            <option value="16:9">16:9 – szélesvásznú</option>
+            <option value="4:3">4:3 – analóg FPV</option>
+          </select>
+        </div>
+        <div class="camera-setting-row">
+          <label for="camera-horizontal-fov">Vízszintes FOV</label>
+          <input id="camera-horizontal-fov" type="range" min="30" max="170" step="0.1" />
+          <input id="camera-horizontal-fov-number" type="number" min="30" max="170" step="0.1" aria-label="Vízszintes FOV fokban" />
+        </div>
+        <div class="camera-setting-row">
+          <label for="camera-vertical-fov">Függőleges FOV</label>
+          <input id="camera-vertical-fov" type="range" min="10" max="170" step="0.1" />
+          <input id="camera-vertical-fov-number" type="number" min="10" max="170" step="0.1" aria-label="Függőleges FOV fokban" />
+        </div>
+        <div id="camera-fov-summary"></div>
+        <p class="settings-note">A vízszintes és függőleges FOV össze van kapcsolva az aktuális képarány alapján. Bármelyiket módosíthatod; a másik automatikusan újraszámolódik. A perspektivikus modell a valódi FPV kamera látómezejét közelíti, de a halszemoptika széltorzítását nem utánozza.</p>
+        <p class="settings-note">A pozitív kameraszög a whoop kameráját a vázhoz képest felfelé dönti. Például 35°-os beállításnál 35°-os előredöntés közben néz a kamera a horizontra. A változás automatikusan mentésre kerül.</p>
+        <div class="settings-actions">
+          <button id="camera-settings-reset" class="settings-action" type="button">Alapértékek visszaállítása</button>
+        </div>
+      </div>
+    </div>
+    <div id="drone-settings" hidden>
+      <div class="settings-card" role="dialog" aria-modal="true" aria-labelledby="drone-settings-title">
+        <div class="settings-header">
+          <h2 id="drone-settings-title">Drón beállítások</h2>
+          <button id="drone-settings-close" class="settings-close" type="button" aria-label="Bezárás">&times;</button>
+        </div>
+        <div class="drone-setting-row">
+          <label for="drone-frame-size">Vázméret (mm)</label>
+          <input id="drone-frame-size" type="range" min="40" max="1000" step="5" />
+          <input id="drone-frame-size-number" type="number" min="40" max="1000" step="5" aria-label="Vázméret milliméterben" />
+        </div>
+        <div class="drone-setting-row">
+          <label for="drone-weight">Súly (g)</label>
+          <input id="drone-weight" type="range" min="10" max="5000" step="1" />
+          <input id="drone-weight-number" type="number" min="10" max="5000" step="1" aria-label="Drón súlya grammban" />
+        </div>
+        <div class="drone-setting-row">
+          <label for="drone-thrust">Max. thrust (g)</label>
+          <input id="drone-thrust" type="range" min="20" max="20000" step="10" />
+          <input id="drone-thrust-number" type="number" min="20" max="20000" step="10" aria-label="Maximális tolóerő grammban" />
+        </div>
+        <div id="drone-settings-summary"></div>
+        <p class="settings-note">Alapkonfiguráció: 65 mm whoop, 25 g repülősúly, 130 g összesített maximális thrust, 0702 motorok, 31 mm propellerek és 1S akkumulátor.</p>
+        <div class="settings-actions">
+          <button id="drone-settings-reset" class="settings-action" type="button">Alapértékek visszaállítása</button>
+        </div>
+      </div>
+    </div>
+    <div id="physics-settings" hidden>
+      <div class="settings-card" role="dialog" aria-modal="true" aria-labelledby="physics-settings-title">
+        <div class="settings-header">
+          <h2 id="physics-settings-title">Fizika / Rates</h2>
+          <button id="physics-settings-close" class="settings-close" type="button" aria-label="Bezárás">&times;</button>
+        </div>
+        <div id="physics-settings-fields"></div>
+        <p class="settings-note">Az értékek azonnal érvénybe lépnek. P: rate-hiba korrekció, I: tartós eltérés korrekciója, D: gyors forgásváltozás csillapítása. Ha középállásban forog, először a HUD INPUT sort és a kalibrációt ellenőrizd.</p>
+        <div class="settings-actions">
+          <button id="physics-settings-reset" class="settings-action" type="button">Whoop alapértékek visszaállítása</button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
