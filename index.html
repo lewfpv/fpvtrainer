@@ -88,11 +88,11 @@
       .settings-menu-button:disabled { cursor: not-allowed; opacity: .45; }
       #start-race-button { border-color: rgba(90,225,125,.8); background: rgba(31,124,60,.92); }
       #respawn-button { border-color: rgba(105,190,255,.7); background: rgba(30,92,137,.9); }
-      #controller-settings, #camera-settings, #drone-settings, #physics-settings, #track-settings, #track-selector, #configuration-transfer, #leaderboard, #race-record-dialog {
+      #flight-mode-settings, #controller-settings, #camera-settings, #drone-settings, #physics-settings, #track-settings, #track-selector, #configuration-transfer, #leaderboard, #race-record-dialog {
         position: fixed; inset: 0; z-index: 20; display: grid; place-items: center;
         background: rgba(0,0,0,.56); color: white;
       }
-      #controller-settings[hidden], #camera-settings[hidden], #drone-settings[hidden], #physics-settings[hidden], #track-settings[hidden], #track-selector[hidden], #configuration-transfer[hidden], #leaderboard[hidden], #race-record-dialog[hidden] { display: none; }
+      #flight-mode-settings[hidden], #controller-settings[hidden], #camera-settings[hidden], #drone-settings[hidden], #physics-settings[hidden], #track-settings[hidden], #track-selector[hidden], #configuration-transfer[hidden], #leaderboard[hidden], #race-record-dialog[hidden] { display: none; }
       .settings-card {
         width: min(520px, calc(100vw - 32px)); box-sizing: border-box; padding: 22px;
         border: 1px solid rgba(255,255,255,.2); border-radius: 14px;
@@ -279,18 +279,18 @@
       }
       #go-fly-button:hover { background: linear-gradient(180deg, #8cf097, #59ce69); transform: translateY(-1px); }
 
-      #controller-settings, #camera-settings, #drone-settings, #physics-settings, #track-settings, #track-selector, #configuration-transfer, #leaderboard {
+      #flight-mode-settings, #controller-settings, #camera-settings, #drone-settings, #physics-settings, #track-settings, #track-selector, #configuration-transfer, #leaderboard {
         z-index: 20; left: var(--config-sidebar-width); right: 0; top: var(--config-header-height); bottom: 0; inset: var(--config-header-height) 0 0 var(--config-sidebar-width);
         display: block; overflow: hidden; place-items: initial; color: #e9ecee; background: var(--config-panel);
       }
-      #controller-settings > .settings-card, #camera-settings > .settings-card, #drone-settings > .settings-card,
+      #flight-mode-settings > .settings-card, #controller-settings > .settings-card, #camera-settings > .settings-card, #drone-settings > .settings-card,
       #physics-settings > .settings-card, #track-settings > .settings-card, #track-selector > .settings-card,
       #configuration-transfer > .settings-card, #leaderboard > .settings-card {
         width: 100%; height: 100%; max-width: none; max-height: none; box-sizing: border-box; margin: 0; padding: 27px clamp(24px, 4vw, 58px) 50px;
         overflow-y: auto; border: 0; border-radius: 0; color: #e8ebed;
         background: linear-gradient(135deg, #17191a 0%, #121415 100%); box-shadow: none;
       }
-      #controller-settings > .settings-card > *, #camera-settings > .settings-card > *, #drone-settings > .settings-card > *,
+      #flight-mode-settings > .settings-card > *, #controller-settings > .settings-card > *, #camera-settings > .settings-card > *, #drone-settings > .settings-card > *,
       #physics-settings > .settings-card > *, #track-settings > .settings-card > *, #track-selector > .settings-card > *,
       #configuration-transfer > .settings-card > *, #leaderboard > .settings-card > * { max-width: 1120px; }
       .settings-header { margin-bottom: 22px; padding-bottom: 14px; border-bottom: 1px solid #34383a; }
@@ -334,10 +334,21 @@
       }
       .configuration-transfer-section h3 { margin: 0 0 8px; color: var(--config-yellow); font-size: 16px; }
       .configuration-transfer-section p { margin: 0 0 16px; color: #aeb5b9; font-size: 13px; line-height: 1.55; }
+      #flight-mode-select {
+        width: min(420px, 100%); box-sizing: border-box; padding: 11px 12px; border: 1px solid #4a4f52;
+        border-radius: 6px; color: #f0f2f3; background: #242729; font-size: 14px;
+      }
+      .flight-mode-description {
+        max-width: 760px !important; margin: 18px 0; padding: 16px 18px; border: 1px solid var(--config-border);
+        border-radius: 8px; background: var(--config-panel-raised); color: #b9c0c4; font-size: 13px; line-height: 1.6;
+      }
+      .flight-mode-description strong { color: var(--config-yellow); }
+      #flight-mode-selection-status { margin: 14px 0; color: #8ee59b; font-size: 13px; }
       #configuration-transfer-status { min-height: 20px; margin-top: 14px; color: #8ee59b; font-size: 13px; }
       #configuration-transfer-status[data-error="true"] { color: #ff9389; }
       #race-record-dialog { z-index: 60; }
       body.configurator-menu-hidden #configurator-shell,
+      body.configurator-menu-hidden #flight-mode-settings,
       body.configurator-menu-hidden #controller-settings,
       body.configurator-menu-hidden #camera-settings,
       body.configurator-menu-hidden #drone-settings,
@@ -363,7 +374,7 @@
         #race-hud { right: 12px; bottom: 76px; min-width: 220px; }
       }
     </style>
-    <script type="module" crossorigin src="./assets/index-p9Z86N_k.js"></script>
+    <script type="module" crossorigin src="./assets/index-BMaOBbMg.js"></script>
   </head>
   <body>
     <canvas id="app"></canvas>
@@ -385,7 +396,7 @@
       <img id="flight-watermark" alt="Learn FPV" />
       <div id="telemetry"></div>
       <div id="crosshair"></div>
-      <div id="help">W/S pitch · A/D roll · ↑/↓ throttle · ←/→ yaw · R respawn<br>Gamepad respawn: egyszer spawn · spawnon újra versenyrajt</div>
+      <div id="help">W/S throttle · A/D yaw · egér pitch/roll · R respawn<br>Kattints a repülési képre az egér aktiválásához · ESC: egér feloldása</div>
       <div id="stick-indicators" aria-hidden="true">
         <div class="stick-indicator"><span id="left-stick-dot" class="stick-dot"></span></div>
         <div class="stick-indicator"><span id="right-stick-dot" class="stick-dot"></span></div>
@@ -405,7 +416,7 @@
         </div>
         <div class="configurator-status">
           <span><i class="status-dot"></i> SIMULATOR READY</span>
-          <span>ACRO MODE</span>
+          <span id="flight-mode-status">ANGLE MODE · 15°</span>
           <span class="configurator-esc-hint"><kbd>ESC</kbd> MENÜ ELREJTÉSE</span>
         </div>
       </header>
@@ -413,6 +424,7 @@
         <div class="menu-section-label">REPÜLÉS</div>
         <button id="start-race-button" class="settings-menu-button menu-action-button" data-icon="▶" type="button">Start Race</button>
         <button id="respawn-button" class="settings-menu-button menu-action-button" data-icon="↻" type="button">Respawn</button>
+        <button id="flight-mode-settings-button" class="settings-menu-button" data-icon="M" type="button">Repülési mód</button>
         <div class="menu-section-label">PÁLYA</div>
         <button id="track-selector-button" class="settings-menu-button" data-icon="▣" type="button">Pályaválasztó</button>
         <button id="track-settings-button" class="settings-menu-button" data-icon="☼" type="button">Pályabeállítások</button>
@@ -438,6 +450,30 @@
       <span id="replay-status">REPLAY</span>
       <button id="replay-stop-button" class="settings-action" type="button">Replay leállítása</button>
     </div>
+    <div id="flight-mode-settings" hidden>
+      <div class="settings-card" role="dialog" aria-modal="true" aria-labelledby="flight-mode-settings-title">
+        <div class="settings-header">
+          <h2 id="flight-mode-settings-title">Repülési mód</h2>
+          <button id="flight-mode-settings-close" class="settings-close" type="button" aria-label="Bezárás">&times;</button>
+        </div>
+        <label for="flight-mode-select" class="settings-section-title">Aktív mód</label>
+        <select id="flight-mode-select">
+          <option value="acro">Acro</option>
+          <option value="angle">Angle</option>
+          <option value="easy">Easy</option>
+        </select>
+        <div id="flight-mode-selection-status" role="status" aria-live="polite"></div>
+        <div class="flight-mode-description">
+          <strong>Acro:</strong> a pitch és roll kar forgási sebességet vezérel, nincs automatikus szintezés.<br>
+          <strong>Angle:</strong> automatikusan szintez, a pitch és roll legfeljebb 15° lehet; a gáz hagyományosan 0–100%.<br>
+          <strong>Easy:</strong> ugyanaz a 15°-os Angle vezérlés, magasságtartással. A gázkar közepe tartja a magasságot, előre emelkedik, hátra süllyed.
+        </div>
+        <p class="settings-note">Automatikus beállításnál csatlakoztatott távirányítóval Acro, kontroller nélkül Angle mód indul.</p>
+        <div class="settings-actions">
+          <button id="flight-mode-automatic" class="settings-action" type="button">Automatikus alapmód</button>
+        </div>
+      </div>
+    </div>
     <div id="track-selector" hidden>
       <div class="settings-card" role="dialog" aria-modal="true" aria-labelledby="track-selector-title">
         <div class="settings-header">
@@ -460,7 +496,7 @@
         </div>
         <section class="configuration-transfer-section">
           <h3>Exportálás</h3>
-          <p>Az export tartalmazza az összes kamera-, pálya-, drón-, fizika/PID- és kontrollerbeállítást, a kalibrációt, valamint az aktuálisan kiválasztott pályát.</p>
+          <p>Az export tartalmazza a repülési módot, az összes kamera-, pálya-, drón-, fizika/PID- és kontrollerbeállítást, a kalibrációt, valamint az aktuálisan kiválasztott pályát.</p>
           <button id="configuration-export-button" class="settings-action primary" type="button">Beállítások letöltése JSON-ban</button>
         </section>
         <section class="configuration-transfer-section">
