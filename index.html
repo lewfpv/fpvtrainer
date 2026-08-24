@@ -141,6 +141,19 @@
         font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre;
       }
       #calibration-message { min-height: 18px; margin: 8px 0; color: #ffcf70; font-size: 12px; }
+      #controller-wizard {
+        margin-top: 16px; padding: 14px; border: 1px solid #4d8fc9;
+        border-radius: 8px; background: #151d23;
+      }
+      #controller-wizard[hidden] { display: none; }
+      #controller-wizard h3 { margin: 0 0 8px; font-size: 16px; }
+      #controller-wizard-progress { color: #78c8ff; font: 700 12px/1.4 ui-monospace, monospace; }
+      #controller-wizard-instruction { margin: 8px 0; color: #fff; font-size: 15px; line-height: 1.45; }
+      #controller-wizard-live {
+        min-height: 20px; margin: 8px 0; color: #bfe3ff;
+        font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      #controller-wizard-message { min-height: 18px; margin: 8px 0; color: #ffcf70; font-size: 12px; }
       .camera-setting-row, .drone-setting-row, .physics-setting-row {
         display: grid; grid-template-columns: 120px 1fr 76px; gap: 12px;
         align-items: center; margin: 18px 0;
@@ -374,7 +387,7 @@
         #race-hud { right: 12px; bottom: 76px; min-width: 220px; }
       }
     </style>
-    <script type="module" crossorigin src="./assets/index-BtsesDBl.js"></script>
+    <script type="module" crossorigin src="./assets/index-DRyyRMVr.js"></script>
   </head>
   <body>
     <canvas id="app"></canvas>
@@ -583,10 +596,25 @@
           <select id="controller-respawn-button"></select>
           <span></span>
         </div>
+        <div class="mapping-row">
+          <label for="controller-menu-button">Menü ki/be gomb</label>
+          <select id="controller-menu-button"></select>
+          <span></span>
+        </div>
         <p class="settings-note">A tengely száma kontrollerenként eltérhet. Mozgasd a karokat, és az élő érték alapján válaszd ki a megfelelő tengelyt.</p>
+        <div id="controller-wizard" hidden>
+          <h3>Kontroller beállító varázsló</h3>
+          <div id="controller-wizard-progress"></div>
+          <p id="controller-wizard-instruction"></p>
+          <div id="controller-wizard-live"></div>
+          <div id="controller-wizard-message"></div>
+          <div class="settings-actions">
+            <button id="controller-wizard-cancel" class="settings-action" type="button">Mégse</button>
+          </div>
+        </div>
         <div id="controller-calibration" hidden>
           <h3>Kontroller kalibráció</h3>
-          <p id="calibration-instructions">Indítsd el a mérést, majd mozgasd az összes kart többször teljesen minden irányba. Ezután tedd a throttle-t minimumra, a többi kart középre, és mentsd el.</p>
+          <p id="calibration-instructions">Indítsd el a mérést, majd mozgasd az összes kart többször teljesen minden irányba. Mentéskor távirányítón a throttle legyen minimumon, Gamepad módban minden rugós kar legyen középen.</p>
           <div id="calibration-values">A mérés még nem indult el.</div>
           <div id="calibration-message"></div>
           <div class="settings-actions">
@@ -596,9 +624,15 @@
           </div>
         </div>
         <div class="settings-actions">
+          <button id="controller-wizard-start" class="settings-action primary" type="button">Varázsló</button>
           <button id="controller-calibration-toggle" class="settings-action" type="button">Kalibráció</button>
           <button id="controller-settings-reset" class="settings-action" type="button">Alap Mode 2 kiosztás</button>
         </div>
+        <label class="toggle-setting-row" for="controller-gamepad-mode">
+          <span>Gamepad</span>
+          <input id="controller-gamepad-mode" type="checkbox" />
+        </label>
+        <p class="settings-note">Gamepad módban Acro/Angle repülésnél a rugós throttle-kar középállása 0%. Easy módban a középállás továbbra is magasságtartás.</p>
       </div>
     </div>
     <div id="camera-settings" hidden>
