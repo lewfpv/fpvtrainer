@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FPV Trainer v0.1</title>
+    <title>FPV Trainer v0.2a</title>
     <style>
       html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #101214; font-family: system-ui, sans-serif; }
       #app { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); display: block; }
@@ -171,9 +171,34 @@
         margin: -4px 0 14px; padding: 9px 10px; border-radius: 6px;
         color: #bfe3ff; background: #101315; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
       }
-      #track-file-select {
-        width: 100%; box-sizing: border-box; margin: 16px 0 10px; padding: 10px;
-        border: 1px solid #535b62; border-radius: 6px; color: white; background: #292e32;
+      #track-grid {
+        display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 12px;
+        width: 100%; max-width: none !important; margin: 16px 0;
+      }
+      .track-card {
+        min-width: 0; padding: 0; overflow: hidden; border: 1px solid #41474a; border-radius: 8px;
+        color: #e9edef; background: #222628; cursor: pointer; text-align: left;
+        box-shadow: 0 5px 16px rgba(0,0,0,.22); transition: transform .14s, border-color .14s, box-shadow .14s;
+      }
+      .track-card:hover, .track-card:focus-visible {
+        outline: 0; transform: translateY(-2px); border-color: var(--config-yellow);
+        box-shadow: 0 9px 23px rgba(0,0,0,.34);
+      }
+      .track-card.selected { border-color: #72d984; box-shadow: 0 0 0 1px rgba(114,217,132,.35); }
+      .track-card-media {
+        display: grid; place-items: center; width: 100%; aspect-ratio: 16 / 9; overflow: hidden;
+        color: #737b7f; background: linear-gradient(145deg, #343a3d, #151819); font-size: 27px;
+      }
+      .track-card-media img { width: 100%; height: 100%; object-fit: cover; }
+      .track-card-copy { display: block; padding: 8px 9px 10px; }
+      .track-card-name {
+        display: block; overflow: hidden; color: #f2f4f5; font-size: 12px; font-weight: 760;
+        text-overflow: ellipsis; white-space: nowrap;
+      }
+      .track-card-size { display: block; margin-top: 3px; color: var(--config-yellow); font: 700 10px/1.2 ui-monospace, monospace; }
+      .track-card-description {
+        display: -webkit-box; min-height: 31px; margin-top: 5px; overflow: hidden; color: #9fa7ab;
+        font-size: 10px; line-height: 1.4; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
       }
       #track-selector-status {
         min-height: 18px; margin: 8px 0 16px; color: #bfe3ff; font-size: 13px;
@@ -325,11 +350,11 @@
       .toggle-setting-row input:checked { border-color: var(--config-yellow); background: var(--config-yellow); }
       .toggle-setting-row input:checked::after { transform: translateX(20px); background: #171819; }
       .mapping-row select, .camera-setting-row select, .camera-setting-row input[type="number"],
-      .drone-setting-row input[type="number"], .physics-setting-row input[type="number"], #track-file-select, #race-record-name {
+      .drone-setting-row input[type="number"], .physics-setting-row input[type="number"], #race-record-name {
         border-color: #4a4f52; color: #f0f2f3; background: #242729;
       }
       .mapping-row select:focus, .camera-setting-row select:focus, .camera-setting-row input:focus,
-      .drone-setting-row input:focus, .physics-setting-row input:focus, #track-file-select:focus {
+      .drone-setting-row input:focus, .physics-setting-row input:focus {
         outline: 1px solid var(--config-yellow); border-color: var(--config-yellow);
       }
       .camera-setting-row input[type="range"], .drone-setting-row input[type="range"], .physics-setting-row input[type="range"] { accent-color: var(--config-yellow); }
@@ -371,6 +396,11 @@
       body.configurator-menu-hidden #configuration-transfer,
       body.configurator-menu-hidden #leaderboard { display: none !important; }
 
+      @media (max-width: 1600px) { #track-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); } }
+      @media (max-width: 1280px) { #track-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+      @media (max-width: 900px) { #track-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+      @media (max-width: 620px) { #track-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
       @media (max-width: 500px) {
         :root { --config-header-height: 72px; --config-sidebar-width: min(82vw, 252px); }
         #configurator-header { padding: 8px 14px; }
@@ -387,7 +417,7 @@
         #race-hud { right: 12px; bottom: 76px; min-width: 220px; }
       }
     </style>
-    <script type="module" crossorigin src="./assets/index-D-Bon1vh.js"></script>
+    <script type="module" crossorigin src="./assets/index-BM3fZE_x.js"></script>
   </head>
   <body>
     <canvas id="app"></canvas>
@@ -449,7 +479,7 @@
         <button id="controller-settings-button" class="settings-menu-button" data-icon="⌁" type="button">Kontroller beállítások</button>
         <div class="menu-section-label">RENDSZER</div>
         <button id="configuration-transfer-button" class="settings-menu-button" data-icon="⇄" type="button">Mentés / import</button>
-        <div class="menu-version">v0.1a [260823]</div>
+        <div class="menu-version">v0.2a [260825]</div>
       </aside>
       <main id="configurator-home">
         <div class="configurator-home-card">
@@ -493,12 +523,8 @@
           <h2 id="track-selector-title">Pályaválasztó</h2>
           <button id="track-selector-close" class="settings-close" type="button" aria-label="Bezárás">&times;</button>
         </div>
-        <select id="track-file-select" aria-label="Betöltendő pálya"></select>
+        <div id="track-grid" role="group" aria-label="Elérhető pályák"></div>
         <div id="track-selector-status">Pályák keresése…</div>
-        <p class="settings-note">A lista a <code>public/tracks</code> mappa GLB és glTF fájljait tartalmazza. A kiválasztott pálya automatikusan betöltődik és megmarad a következő indításra.</p>
-        <div class="settings-actions">
-          <button id="track-reload-button" class="settings-action" type="button">Pálya újratöltése</button>
-        </div>
       </div>
     </div>
     <div id="configuration-transfer" hidden>
@@ -530,7 +556,7 @@
         <div id="leaderboard-track"></div>
         <div id="leaderboard-rows"></div>
         <div id="leaderboard-render-status" role="status" aria-live="polite" hidden></div>
-        <p class="settings-note">A leaderboard és a replay a szerveren tárolódik. A teljes háromkörös versenyidőt rangsorolja; új nevet csak az eddigi leggyorsabb összidő megdöntésekor lehet megadni.</p>
+        <p class="settings-note">3 körös ranglista, új nevet csak a legjobb idő megdöntésével lehet megadni.</p>
       </div>
     </div>
     <div id="race-record-dialog" hidden>
@@ -557,9 +583,17 @@
           <span>Árnyékok</span>
           <input id="track-shadows" type="checkbox" />
         </label>
+        <label class="toggle-setting-row" for="track-lights">
+          <span>Blender fényforrások</span>
+          <input id="track-lights" type="checkbox" />
+        </label>
         <label class="toggle-setting-row" for="track-skybox">
           <span>Pálya skybox</span>
           <input id="track-skybox" type="checkbox" />
+        </label>
+        <label class="toggle-setting-row" for="track-skybox-reflections">
+          <span>Skybox tükröződés a felületeken</span>
+          <input id="track-skybox-reflections" type="checkbox" />
         </label>
         <label class="toggle-setting-row" for="track-crosshair">
           <span>Célkereszt</span>
@@ -577,7 +611,6 @@
           <span>Stick indikátorok</span>
           <input id="track-stick-indicators" type="checkbox" />
         </label>
-        <p class="settings-note">A skybox akkor jelenik meg, ha a pálya mellett van egy azonos nevű <code>_skybox</code> kép. Az árnyékok kikapcsolása növelheti a teljesítményt. A beállítások automatikusan mentésre kerülnek.</p>
         <div class="settings-actions">
           <button id="track-settings-reset" class="settings-action" type="button">Alapértékek visszaállítása</button>
         </div>

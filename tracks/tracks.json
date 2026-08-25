@@ -1,0 +1,53 @@
+{
+  "version": 2,
+  "tracks": [
+    {
+      "trackname": "Alap pálya",
+      "filename": "default.glb",
+      "skybox_file": null,
+      "desc": "Egyszerű alap- és tesztpálya gyakorláshoz.",
+      "size": 2.46,
+      "scale": 1
+    },
+    {
+      "trackname": "Game Room",
+      "filename": "game_room.glb",
+      "skybox_file": null,
+      "desc": "Nagy, részletes beltéri szobapálya kapukkal.",
+      "size": 38.35,
+      "scale": 1
+    },
+    {
+      "trackname": "Gym",
+      "filename": "gym.glb",
+      "skybox_file": null,
+      "desc": "Tornatermi gyakorlópálya gyors vonalvezetéssel.",
+      "size": 3.19,
+      "scale": 1
+    },
+    {
+      "trackname": "Playground",
+      "filename": "playground.glb",
+      "skybox_file": "skyboxes/air_museum_playground_4k.hdr",
+      "desc": "Könnyű, szabadtéri jellegű gyakorlópálya.",
+      "size": 0.54,
+      "scale": 0.125
+    },
+    {
+      "trackname": "Subway Entrance",
+      "filename": "subway_entrance.glb",
+      "skybox_file": null,
+      "desc": "Metróbejárat környezetében kialakított technikás pálya.",
+      "size": 1.80,
+      "scale": 1
+    },
+    {
+      "trackname": "Tiny House",
+      "filename": "tinyhouse.glb",
+      "skybox_file": "skyboxes/skybox01.hdr",
+      "desc": "Kisméretű beltéri házpálya egyedi HDR skyboxszal.",
+      "size": 7.51,
+      "scale": 1
+    }
+  ]
+}
