@@ -204,6 +204,18 @@
         min-height: 18px; margin: 8px 0 16px; color: #bfe3ff; font-size: 13px;
       }
       #track-selector-status[data-error="true"] { color: #ff9b8f; }
+      #tinydrones-import {
+        display: grid; grid-template-columns: minmax(220px, 1fr) auto; gap: 8px; align-items: end;
+        margin: 14px 0 2px; padding: 12px; border: 1px solid #3d4448; border-radius: 8px; background: #202426;
+      }
+      #tinydrones-import[hidden] { display: none; }
+      #tinydrones-import label { grid-column: 1 / -1; color: #d8dddf; font-size: 12px; font-weight: 700; }
+      #tinydrones-public-url {
+        min-width: 0; padding: 9px 10px; border: 1px solid #50575b; border-radius: 6px;
+        color: #f2f4f5; background: #151819;
+      }
+      #tinydrones-import-status { grid-column: 1 / -1; min-height: 17px; color: #9fc7df; font-size: 11px; }
+      #tinydrones-import-status[data-error="true"] { color: #ff9b8f; }
       #leaderboard-track { margin: 8px 0 14px; color: #bfe3ff; font-size: 13px; }
       .leaderboard-row {
         display: grid; grid-template-columns: 32px minmax(60px, 1fr) auto 68px 68px; gap: 7px; padding: 9px 8px;
@@ -417,7 +429,7 @@
         #race-hud { right: 12px; bottom: 76px; min-width: 220px; }
       }
     </style>
-    <script type="module" crossorigin src="./assets/index-BM3fZE_x.js"></script>
+    <script type="module" crossorigin src="./assets/index-qWL02iU9.js"></script>
   </head>
   <body>
     <canvas id="app"></canvas>
@@ -523,6 +535,12 @@
           <h2 id="track-selector-title">Pályaválasztó</h2>
           <button id="track-selector-close" class="settings-close" type="button" aria-label="Bezárás">&times;</button>
         </div>
+        <form id="tinydrones-import" hidden>
+          <label for="tinydrones-public-url">Tiny Drones public pálya importálása</label>
+          <input id="tinydrones-public-url" type="url" required autocomplete="off" placeholder="https://tinydrones.eu/trackeditor/view/…" />
+          <button id="tinydrones-import-button" class="settings-action primary" type="submit">GLB készítése</button>
+          <div id="tinydrones-import-status" role="status" aria-live="polite"></div>
+        </form>
         <div id="track-grid" role="group" aria-label="Elérhető pályák"></div>
         <div id="track-selector-status">Pályák keresése…</div>
       </div>

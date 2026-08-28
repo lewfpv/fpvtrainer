@@ -30,6 +30,22 @@ Example:
 together. For example, use `0.125` to reduce a 20-metre object to 2.5 metres.
 Only positive values are accepted; an omitted or invalid value defaults to `1`.
 
+## Tiny Drones public imports
+
+Under local `npm run dev`, the track selector can send a
+`https://tinydrones.eu/trackeditor/view/<token>` public link to the development
+API. It generates a performance-merged GLB, stores it as
+`TD_<TRACK_NAME>.glb`, and upserts its `tracks.json` entry. Imported metadata
+also records `source_format`, `source_url`, and `imported_at`.
+
+Public Tiny Drones responses can omit private referenced gate assemblies. Such
+placements are preserved as red physical placeholder frames at the original
+position and rotation, and their count is included in the card description.
+
+The GitHub Pages UI does not expose the importer, and the standalone production
+Node server rejects the write/convert endpoint. Run `npm run build:pages` after
+local imports to copy the generated GLBs into the static `release` build.
+
 Track thumbnails belong in `thumbnails`. Their base name must match the track
 file, for example `tinyhouse.glb` uses `thumbnails/tinyhouse.webp`. Supported
 formats: `.webp`, `.jpg`, `.jpeg`, `.png`. Missing images use a placeholder.

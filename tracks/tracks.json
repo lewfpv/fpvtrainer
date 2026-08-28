@@ -38,7 +38,7 @@
       "filename": "subway_entrance.glb",
       "skybox_file": null,
       "desc": "Metróbejárat környezetében kialakított technikás pálya.",
-      "size": 1.80,
+      "size": 1.8,
       "scale": 1
     },
     {
@@ -48,6 +48,36 @@
       "desc": "Kisméretű beltéri házpálya egyedi HDR skyboxszal.",
       "size": 7.51,
       "scale": 1
+    },
+    {
+      "trackname": "De Dust 2",
+      "filename": "dust2.glb",
+      "skybox_file": "skyboxes/rural_asphalt_road_4k.hdr",
+      "desc": "Dust 2 pálya a CS1.6 ból (részlet).",
+      "size": 0.9,
+      "scale": 1
+    },
+    {
+      "trackname": "OE CUP 11",
+      "filename": "TD_OE_CUP_11.glb",
+      "skybox_file": null,
+      "desc": "Tiny Drones import · 19.86 × 12.64 m · 55 objektum · 8 privát elem helyőrzővel",
+      "size": 3.81,
+      "scale": 1,
+      "source_format": "tinydrones-public-v1",
+      "source_url": "https://tinydrones.eu/trackeditor/view/e6e06582f5b885f8f07c688ec5b02c2d",
+      "imported_at": "2026-08-28T19:12:30.810Z"
+    },
+    {
+      "trackname": "Summer fest 2026",
+      "filename": "TD_SUMMER_FEST_2026.glb",
+      "skybox_file": null,
+      "desc": "Tiny Drones import · 9.30 × 15.10 m · 49 objektum · 2 privát elem helyőrzővel",
+      "size": 7.65,
+      "scale": 1,
+      "source_format": "tinydrones-public-v1",
+      "source_url": "https://tinydrones.eu/trackeditor/view/334078737f30efe2ececd3849864b0d5",
+      "imported_at": "2026-08-28T20:17:20.842Z"
     }
   ]
 }
